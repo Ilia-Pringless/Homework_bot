@@ -52,7 +52,7 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """Запрос к эндпоинту API сервиса."""
-    timestamp = current_timestamp  # or int(time.time())
+    timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
     if response.status_code == 200:
@@ -116,8 +116,7 @@ def main():
     """Основная логика работы бота."""
     logger.debug('Бот работает')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    # current_timestamp = int(time.time())
-    current_timestamp = int(0)
+    current_timestamp = int(time.time())
     message_error = None
     if check_tokens() is False:
         raise logging.error('Ошибка токенов')
