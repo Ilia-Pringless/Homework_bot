@@ -63,16 +63,18 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверка ответа API на корректность."""
-    if not isinstance(response, dict):
-        raise TypeError('Неверный тип данных')
-    hws = response['homeworks']
-    if not isinstance(hws, list):
-        raise TypeError('Неверный тип данных')
-    if len(hws) != 0:
-        print(response['homeworks'])
-        return response['homeworks']
-    else:
-        raise IndexError('Список пуст')
+    try:
+        if not isinstance(response, dict):
+            raise TypeError('Неверный тип данных')
+        hworks = response['homeworks']
+        if not isinstance(hworks, list):
+            raise TypeError('Неверный тип данных')
+        if len(hworks) != 0:
+            return hworks
+        else:
+            raise IndexError('Список пуст')
+    except IndexError as error:
+        logging.debug(f'Нет новых статусов: {error}')
 
 
 def parse_status(homework):
@@ -129,25 +131,11 @@ def main():
                 send_message(bot, message)
                 current_timestamp = response['current_date']
 
-        except EndPointError as error:
-            logging.error(f'Ошибка запроса к API: {error}')
-            if message_error is None:
-                send_message_error(error)
-                message_error = error
-        except TypeError as error:
-            logging.error(f'Неправильный ответ API: {error}')
-            if message_error is None:
-                send_message_error(error)
-                message_error = error
-        except IndexError as error:
-            logging.debug(f'Нет новых статусов: {error}')
-        except StatusTypeError as error:
-            logging.error(f'Неверный тип данных для parse_status: {error}')
-            if message_error is None:
-                send_message_error(error)
-                message_error = error
-        except KeyError as error:
-            logging.error(f'Ошибка обращения к словарю: {error}')
+        except (EndPointError,
+                TypeError,
+                StatusTypeError,
+                KeyError) as error:
+            logging.error(f'Сбой в работе программы: {error}')
             if message_error is None:
                 send_message_error(error)
                 message_error = error
