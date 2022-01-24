@@ -29,15 +29,17 @@ HOMEWORK_STATUSES = {
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
 
-logger = logging.getLogger()
-fileHandler = logging.FileHandler("main.log")
-logger.setLevel(logging.INFO)
+# path = os.path.expanduser('~')
+path = os.getcwd()
+logging.basicConfig(
+    level=logging.DEBUG,
+    filename=os.path.join(path, 'main.log'),
+    filemode='w',
+    format='%(asctime)s, %(levelname)s, %(message)s'
+)
+logger = logging.getLogger(__name__)
 handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-fileHandler.setFormatter(formatter)
 logger.addHandler(handler)
-logger.addHandler(fileHandler)
 
 
 def send_message(bot, message):
@@ -52,29 +54,39 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """Запрос к эндпоинту API сервиса."""
-    timestamp = current_timestamp or int(time.time())
-    params = {'from_date': timestamp}
-    response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        raise EndPointError('Нет ответа API')
+    try:
+        timestamp = current_timestamp or int(time.time())
+        if not isinstance(timestamp, (float, int)):
+            raise EndPointError('Неверный формат даты')
+        params = {'from_date': timestamp}
+        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        if response.status_code == 200:
+            return response.json()
+        if response.status_code == 404:
+            raise EndPointError(f'Нет ответа API: {response.status_code}')
+        else:
+            response = response.json()
+            answer_code = response.get('code')
+            answer_error = response.get('error')
+            if not answer_code:
+                raise EndPointError(f'Нет ответа API: {answer_error}')
+            else:
+                raise EndPointError(f'Нет ответа API: {answer_code}')
+    except EndPointError as error:
+        raise(error)
 
 
 def check_response(response):
     """Проверка ответа API на корректность."""
-    try:
-        if not isinstance(response, dict):
-            raise TypeError('Неверный тип данных')
-        hworks = response['homeworks']
-        if not isinstance(hworks, list):
-            raise TypeError('Неверный тип данных')
-        if len(hworks) != 0:
-            return hworks
-        else:
-            raise IndexError('Список пуст')
-    except IndexError as error:
-        logging.debug(f'Нет новых статусов: {error}')
+    if not isinstance(response, dict):
+        raise TypeError('Неверный тип данных')
+    hworks = response.get('homeworks')
+    if not isinstance(hworks, list):
+        raise TypeError('Неверный тип данных')
+    if len(hworks) != 0:
+        return hworks
+    else:
+        raise IndexError('Список пуст')
 
 
 def parse_status(homework):
@@ -95,16 +107,20 @@ def check_tokens():
     try:
         token = True
         if PRACTICUM_TOKEN is None:
+            logging.critical(
+            f'Нет обязательных переменных окружения: PRACTICUM_TOKEN')
             token = False
         if TELEGRAM_TOKEN is None:
+            logging.critical(
+            f'Нет обязательных переменных окружения: TELEGRAM_TOKEN')
             token = False
         if TELEGRAM_CHAT_ID is None:
+            logging.critical(
+            f'Нет обязательных переменных окружения: TELEGRAM_CHAT_ID')
             token = False
         return token
     except Exception as error:
-        raise logging.critical(
-            f'Нет обязательных переменных окружения: {error}'
-        )
+        raise (f'Нет обязательных переменных окружения: {error}')
 
 
 def send_message_error(error):
@@ -116,9 +132,9 @@ def send_message_error(error):
 
 def main():
     """Основная логика работы бота."""
-    logger.debug('Бот работает')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
+    # current_timestamp = int(0)
     message_error = None
     if check_tokens() is False:
         raise logging.error('Ошибка токенов')
@@ -129,7 +145,12 @@ def main():
             for hw in homework:
                 message = parse_status(hw)
                 send_message(bot, message)
+                logger.debug('Бот работает')
                 current_timestamp = response['current_date']
+
+        except IndexError as error:
+            logging.debug(f'Нет новых статусов: {error}')
+            logger.debug('Бот работает')
 
         except (EndPointError,
                 TypeError,
