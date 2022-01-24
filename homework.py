@@ -108,15 +108,15 @@ def check_tokens():
         token = True
         if PRACTICUM_TOKEN is None:
             logging.critical(
-            f'Нет обязательных переменных окружения: PRACTICUM_TOKEN')
+                'Нет обязательных переменных окружения: PRACTICUM_TOKEN')
             token = False
         if TELEGRAM_TOKEN is None:
             logging.critical(
-            f'Нет обязательных переменных окружения: TELEGRAM_TOKEN')
+                'Нет обязательных переменных окружения: TELEGRAM_TOKEN')
             token = False
         if TELEGRAM_CHAT_ID is None:
             logging.critical(
-            f'Нет обязательных переменных окружения: TELEGRAM_CHAT_ID')
+                'Нет обязательных переменных окружения: TELEGRAM_CHAT_ID')
             token = False
         return token
     except Exception as error:
