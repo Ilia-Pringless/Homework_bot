@@ -133,7 +133,8 @@ def send_message_error(error):
 def main():
     """Основная логика работы бота."""
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time())
+    print(type(bot))
+    current_timestamp = int(time.time()) - RETRY_TIME
     # current_timestamp = int(0)
     message_error = None
     if check_tokens() is False:
