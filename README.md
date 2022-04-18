@@ -12,4 +12,4 @@
 # Технологии 
 Python
 # Автор 
-Ilia Iliukhin
+Ilia-Pringless
